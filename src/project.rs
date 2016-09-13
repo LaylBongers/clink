@@ -2,8 +2,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::io::Read;
 use toml;
-use walkdir::WalkDir;
-use vsdata::{SlnFile, VcxprojFile, ProjDesc, VcxprojType};
+use vsdata::{self, ProjFiles, SlnFile, VcxprojFile, ProjDesc, VcxprojType};
 use files;
 use dependency::{Dependency};
 use tomlvalue::{toml_value_table, toml_value_str};
@@ -110,7 +109,8 @@ impl ClinkProject {
         Ok(())
     }
 
-    /// Generate the visual studio project file for this project and return a descriptor of it.
+    /// Generate the visual studio project file and filters file for this project and return a
+    /// descriptor for it.
     // TODO: Change Vec<ProjDesc> to Vec<AvailableDependency> so we can track more data
     pub fn generate_vcxproj(&self, available_dependencies: &Vec<ProjDesc>) -> ProjDesc {
         // Get the project type for our clink project type string
@@ -127,32 +127,12 @@ impl ClinkProject {
         vcxproj.add_include_path(files::clone_push_path(&self.path, "include"));
 
         // Find the .hpp and .cpp files the vcxproj needs
-        for file in WalkDir::new(&self.path) {
-            let file = file.unwrap();
-            let file = file.path();
-
-            // Only go over files
-            if !file.is_file() { continue; }
-
-            // Different behavior for different files
-            let extension: String = file.extension()
-                .map(|e| e.to_string_lossy().to_string())
-                .unwrap_or("".into());
-            if extension == "hpp" {
-                vcxproj.add_include(file.into());
-            }
-
-            if extension == "cpp" {
-                vcxproj.add_compile(file.into());
-            }
-
-            if extension == "h" || extension == "c" {
-                // TODO: Improve warning handling
-                println!(
-                    "WARNING: C/H file \"{}\" ignored, use CPP/HPP instead!",
-                    file.display()
-                );
-            }
+        let files = ProjFiles::scan(&self.path);
+        for file in &files.compile {
+            vcxproj.add_compile(file.into());
+        }
+        for file in &files.include {
+            vcxproj.add_include(file.into());
         }
 
         // Look up and add all the dependencies
@@ -180,8 +160,11 @@ impl ClinkProject {
         let filename = format!("{}.vcxproj", self.name);
         let desc = vcxproj.write_to(files::clone_push_path(&self.path, &filename));
         let filename = format!("{}.vcxproj.filters", self.name);
-        vcxproj.write_filters_to(files::clone_push_path(&self.path, &filename));
+        vsdata::generate_filters(&files, &filename);
 
         desc
+    }
+
+    pub fn generate_vcxproj_filters(&self) {
     }
 }

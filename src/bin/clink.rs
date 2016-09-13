@@ -13,6 +13,7 @@ Usage:
     clink [<command> [<args>...]]
 Some common clink commands are:
     generate    Generate Visual Studio files for the current project (default)
+    filters     Generate just the .vcxproj.fiters file for the current project
     init        Create a new clink project in the current directory
 ";
 
@@ -31,6 +32,7 @@ fn main() {
     let command = args.arg_command.unwrap_or("generate".into());
     let command_func: fn() -> Result<(), ClinkError> = match command.as_ref() {
         "generate" => try_generate,
+        "filters" => try_filters,
         "init" => try_init,
         _ => {
             write!(io::stderr(), "Error: Unknown command \"{}\"\n", command).unwrap();
@@ -47,6 +49,13 @@ fn main() {
 fn try_generate() -> Result<(), ClinkError> {
     let proj = try!(ClinkProject::open("./"));
     try!(proj.generate_sln());
+
+    Ok(())
+}
+
+fn try_filters() -> Result<(), ClinkError> {
+    let proj = try!(ClinkProject::open("./"));
+    proj.generate_vcxproj_filters();
 
     Ok(())
 }

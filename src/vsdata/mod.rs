@@ -1,8 +1,12 @@
+mod filters;
+mod projfiles;
 mod slnfile;
 mod vcxprojfile;
 
 use std::path::PathBuf;
 
+pub use self::filters::generate_filters;
+pub use self::projfiles::ProjFiles;
 pub use self::slnfile::SlnFile;
 pub use self::vcxprojfile::{VcxprojFile, VcxprojType};
 
