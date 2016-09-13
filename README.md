@@ -9,7 +9,10 @@ A simple C++ build system generator. Simplify your Visual Studio project linking
     to generate the project and solution files for.
 5. Run `clink` in your command shell.
 
-Clink expects your *.hpp* files to be in the *include* directory.
+Clink expects your *.hpp*/*.h* files to be in the */include* directory. You can
+add new files from within Visual Studio, but they will not automatically be
+placed in the folder associated with a filter, you need to do this manually when
+creating the file.
 
 ### Example *Clink.toml* files
 ```toml
@@ -32,7 +35,9 @@ type = "library"
 ## Filter-only Usage
 You can also use clink to only generate a *.vcxproj.filters* file. Keep in mind
 that when doing this, clink will not update your *.vcxproj* with new or moved
-files, it will only re-order them in filters.
+files, it will only re-order them in filters. The best way to work with this is
+to **add files from within Visual Studio** and re-run `clink filters` if you
+need to add folders or fix mistakes.
 
 1. Follow steps 1-4 from **Getting Started**. You can omit dependencies if you
     plan to only use clink for filters.
