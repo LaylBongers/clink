@@ -35,8 +35,8 @@ files, it will only re-order them in filters.
 
 1. Follow steps 1-3 from **Getting Started**. You can omit dependencies if you
     plan to only use clink for filters.
-2. *Make sure you have a Clink.toml file with a name matching the project you
-    want to generate for.*
+2. **Make sure you have a Clink.toml file with a name matching the project you
+    want to generate for.**
 3. Run `clink filters` in your command shell in the project folder you want to
     generate Visual Studio filters for.
 4. Reload your project in Visual Studio. (This is unfortunately needed because
