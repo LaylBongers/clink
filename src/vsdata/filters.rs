@@ -101,11 +101,8 @@ pub fn generate_filters<Pr: AsRef<Path>, Pt: AsRef<Path>>(project_root: Pr, file
             ).unwrap();
 
             w.write(XmlEvent::start_element("UniqueIdentifier")).unwrap();
-            let uuid = format!("{}", Uuid::new_v4().hyphenated());
+            let uuid = format!("{{{}}}", Uuid::new_v4().hyphenated());
             w.write(XmlEvent::characters(&uuid)).unwrap();
-            w.write(XmlEvent::end_element()).unwrap();
-
-            w.write(XmlEvent::start_element("Extensions")).unwrap();
             w.write(XmlEvent::end_element()).unwrap();
 
             w.write(XmlEvent::end_element()).unwrap();

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use walkdir::WalkDir;
+use wincanonicalize::wincanonicalize;
 
 pub struct ProjFiles {
     pub compile: Vec<PathBuf>,
@@ -18,17 +19,18 @@ impl ProjFiles {
             // Only go over files
             if !file.is_file() { continue; }
 
+            let file = wincanonicalize(file);
+
             // Different behavior for different files
             let extension: String = file.extension()
                 .map(|e| e.to_string_lossy().to_string())
                 .unwrap_or("".into());
 
             if extension == "cpp" || extension == "c" {
-                compile.push(file.into());
+                compile.push(file);
             }
-
-            if extension == "hpp" || extension == "h" {
-                include.push(file.into());
+            else if extension == "hpp" || extension == "h" {
+                include.push(file);
             }
 
             // Ignore anything else
