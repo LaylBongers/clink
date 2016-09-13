@@ -111,6 +111,7 @@ impl ClinkProject {
     }
 
     /// Generate the visual studio project file for this project and return a descriptor of it.
+    // TODO: Change Vec<ProjDesc> to Vec<AvailableDependency> so we can track more data
     pub fn generate_vcxproj(&self, available_dependencies: &Vec<ProjDesc>) -> ProjDesc {
         // Get the project type for our clink project type string
         let class = match self.class.as_str() {
@@ -121,6 +122,9 @@ impl ClinkProject {
 
         // Create the project file representation
         let mut vcxproj = VcxprojFile::new(self.name.clone(), class);
+
+        // Add the include folder to the include path
+        vcxproj.add_include_path(files::clone_push_path(&self.path, "include"));
 
         // Find the .hpp and .cpp files the vcxproj needs
         for file in WalkDir::new(&self.path) {
@@ -162,6 +166,9 @@ impl ClinkProject {
             let desc = available_dependencies.iter().find(|p| &p.name == dep.name())
                 .expect("Internal error, dependency not found!");
             vcxproj.add_reference(desc.clone());
+
+            // Add the dependency to the include path
+            vcxproj.add_include_path(files::clone_push_path(&dep.path(), "include"));
         }
 
         // TODO: Check if the vcxproj needs to be re-generated or not before actually doing it

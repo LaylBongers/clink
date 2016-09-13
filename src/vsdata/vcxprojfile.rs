@@ -12,6 +12,7 @@ pub struct VcxprojFile {
     name: String,
     class: VcxprojType,
     uuid: Uuid,
+    include_path: Vec<PathBuf>,
     include_files: Vec<PathBuf>,
     compile_files: Vec<PathBuf>,
     references: Vec<ProjDesc>,
@@ -23,10 +24,15 @@ impl VcxprojFile {
             name: name,
             class: class,
             uuid: Uuid::new_v4(),
+            include_path: Vec::new(),
             include_files: Vec::new(),
             compile_files: Vec::new(),
             references: Vec::new(),
         }
+    }
+
+    pub fn add_include_path(&mut self, path: PathBuf) {
+        self.include_path.push(path);
     }
 
     pub fn add_include(&mut self, path: PathBuf) {
@@ -64,6 +70,14 @@ impl VcxprojFile {
         // Inject the GUID
         let uuid = format!("{{{}}}", self.uuid.hyphenated());
         filedata = filedata.replace("{UUID}", &uuid);
+
+        // Build and inject the include path
+        let mut include_path_str = String::new();
+        for inc in &self.include_path {
+            include_path_str.push_str(&format!("{}", inc.display()));
+            include_path_str.push(';');
+        }
+        filedata = filedata.replace("{INCLUDE_PATH}", &include_path_str);
 
         // Write the compile files
         let mut compiled = String::new();
