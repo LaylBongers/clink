@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use wincanonicalize::wincanonicalize;
 use {ClinkProject, ClinkError};
 
 #[derive(Debug)]
@@ -13,11 +14,7 @@ impl Dependency {
         let mut path = proj_path.into();
         path.push(depstring);
 
-        let mut canonical = path.canonicalize().unwrap();
-
-        // Grrr windows
-        let canonical_str = canonical.to_str().unwrap().to_string();
-        canonical = canonical_str.replace("\\\\?\\", "").into();
+        let canonical = wincanonicalize(path);
 
         // Figure out if it's a native clink or external dependency
         let is_external = canonical.extension()

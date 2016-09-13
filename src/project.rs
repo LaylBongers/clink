@@ -160,11 +160,14 @@ impl ClinkProject {
         let filename = format!("{}.vcxproj", self.name);
         let desc = vcxproj.write_to(files::clone_push_path(&self.path, &filename));
         let filename = format!("{}.vcxproj.filters", self.name);
-        vsdata::generate_filters(&files, &filename);
+        vsdata::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
 
         desc
     }
 
     pub fn generate_vcxproj_filters(&self) {
+        let files = ProjFiles::scan(&self.path);
+        let filename = format!("{}.vcxproj.filters", self.name);
+        vsdata::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
     }
 }

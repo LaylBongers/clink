@@ -9,8 +9,10 @@ use clink::{ClinkProject, ClinkError};
 
 const USAGE: &'static str = "
 A simple C++ build system generator
+
 Usage:
     clink [<command> [<args>...]]
+
 Some common clink commands are:
     generate    Generate Visual Studio files for the current project (default)
     filters     Generate just the .vcxproj.fiters file for the current project

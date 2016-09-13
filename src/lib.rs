@@ -1,12 +1,14 @@
 extern crate toml;
 extern crate uuid;
 extern crate walkdir;
+extern crate xml;
 
 mod vsdata;
 mod dependency;
 mod files;
 mod project;
 mod tomlvalue;
+mod wincanonicalize;
 
 use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
