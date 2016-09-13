@@ -8,6 +8,8 @@ A simple C++ build system generator. Simplify your Visual Studio project linking
 4. Run `clink` in your command shell in the executable you want to generate
     Visual Studio projects for.
 
+Clink expects your *.hpp* files to be in the *include* directory.
+
 ### Example *Clink.toml* files
 ```toml
 [package]
