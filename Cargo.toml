@@ -1,0 +1,11 @@
+[package]
+name = "clink"
+version = "0.1.0"
+authors = ["Layl"]
+
+[dependencies]
+docopt = "0.6.83"
+rustc-serialize = "0.3.19"
+toml = "0.2.1"
+uuid = { version = "0.3.1", features = ["v4"] }
+walkdir = "0.1.6"
