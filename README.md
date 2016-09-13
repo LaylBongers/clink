@@ -5,16 +5,26 @@ A simple C++ build system generator. Simplify your Visual Studio project linking
 1. Download clink.exe from github releases.
 2. Place it somewhere in your PATH system variable.
 3. Create a *Clink.toml* file for every project you want.
+4. Run `clink` in your command shell in the executable you want to generate
+    Visual Studio projects for.
+
+### Example *Clink.toml* files
 ```toml
 [package]
 name = "MyGame"
-type = "binary" # use "library" for libraries
+type = "binary"
 
 [dependencies]
 AmazingEngine = "../../Engine/Libraries/AmazingEngine"
 ```
-4. Run `clink` in your command shell in the executable you want to generate
-    Visual Studio projects for.
+
+```toml
+[package]
+name = "AmazingEngine"
+type = "library"
+
+[dependencies]
+```
 
 ## License
 Licensed under either of
