@@ -5,7 +5,7 @@ use toml;
 use vsdata::{self, ProjFiles, SlnFile, VcxprojFile, ProjDesc, VcxprojType};
 use files;
 use dependency::{Dependency};
-use tomlvalue::{toml_value_table, toml_value_str};
+use tomlvalue::{toml_value_table, toml_value_str, toml_table};
 use ClinkError;
 
 pub struct ClinkProject {
@@ -37,15 +37,18 @@ impl ClinkProject {
         let class: String = try!(toml_value_str(&package, "type")).into();
 
         // Read in all dependencies
-        let deps = try!(toml_value_table(&toml, "dependencies"));
         let mut dependencies = Vec::new();
-        for (key, value) in deps {
-            let dep_path = try!(value.as_str()
-                .ok_or_else(||
-                    ClinkError::InvalidProjectFile(format!("{} is invalid type (expected string)", key))
-                )
-            );
-            dependencies.push(Dependency::at(&path, key.clone(), &dep_path));
+        if let Some(deps_table) = toml.get("dependencies") {
+            let deps_table = try!(toml_table(deps_table, "dependencies"));
+
+            for (key, value) in deps_table {
+                let dep_path = try!(value.as_str()
+                    .ok_or_else(||
+                        ClinkError::InvalidProjectFile(format!("{} is invalid type (expected string)", key))
+                    )
+                );
+                dependencies.push(Dependency::at(&path, key.clone(), &dep_path));
+            }
         }
 
         // Store all the information into a helper struct
