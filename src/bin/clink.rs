@@ -63,5 +63,22 @@ fn try_filters() -> Result<(), ClinkError> {
 }
 
 fn try_init() -> Result<(), ClinkError> {
-    unimplemented!()
+    // TODO: Verify the project doesn't already exist
+
+    // Assume the name from the current directory
+    // TODO: Move this into a utility in clink
+    use std::path::PathBuf;
+    let path = PathBuf::from("./").canonicalize().unwrap();
+    let top = path.iter().last().unwrap();
+
+    // Create the new project and write it to a file
+    // TODO: Clean up
+    let proj = Project::new(top.to_str().unwrap().into());
+    let toml = proj.to_toml();
+    use std::fs::File;
+    use std::io::Write;
+    let mut file = File::create("./Clink.toml").unwrap();
+    write!(file, "{}", toml).unwrap();
+
+    Ok(())
 }

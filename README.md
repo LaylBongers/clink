@@ -4,7 +4,8 @@ A simple C++ build system generator. Simplify your Visual Studio project linking
 ## Getting Started
 1. Download clink.exe from github releases.
 2. Place it somewhere in your PATH system variable.
-3. Create a *Clink.toml* file for every project you want.
+3. Run `clink init` in every project folder you want, edit the created
+    *Clink.toml* files to what you want those projects to be.
 4. Navigate a command shell to the clink project folder you want to use as root
     to generate the project and solution files for.
 5. Run `clink` in your command shell.

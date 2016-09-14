@@ -77,6 +77,18 @@ impl Project {
         &self.class
     }
 
+    pub fn to_toml(&self) -> toml::Value {
+        let mut table = toml::Table::new();
+
+        // Write out the project's base information
+        let mut package = toml::Table::new();
+        package.insert("name".into(), toml::Value::String(self.name.clone()));
+        package.insert("type".into(), toml::Value::String(self.class.to_string()));
+        table.insert("package".into(), toml::Value::Table(package));
+
+        toml::Value::Table(table)
+    }
+
     /// Generate the visual studio solution file for this project.
     pub fn generate_sln(&self) -> Result<(), ClinkError> {
         // Go over this project and all dependencies and generate vcxprojs for them
@@ -203,6 +215,13 @@ impl ProjectClass {
             "application" => Ok(ProjectClass::Application),
             "library" => Ok(ProjectClass::Library),
             v => Err(ClinkError::InvalidProjectFile(format!("\"{}\" is not a valid project type", v)))
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            &ProjectClass::Application => "application".into(),
+            &ProjectClass::Library => "library".into(),
         }
     }
 }
