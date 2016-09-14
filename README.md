@@ -18,7 +18,7 @@ creating the file.
 ```toml
 [package]
 name = "MyGame"
-type = "binary"
+type = "application"
 
 [dependencies]
 AmazingEngine = "../../Engine/Libraries/AmazingEngine"

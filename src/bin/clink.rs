@@ -5,7 +5,7 @@ extern crate clink;
 use std::process;
 use std::io::{self, Write};
 use docopt::Docopt;
-use clink::{ClinkProject, ClinkError};
+use clink::{Project, ClinkError};
 
 const USAGE: &'static str = "
 A simple C++ build system generator
@@ -49,14 +49,14 @@ fn main() {
 }
 
 fn try_generate() -> Result<(), ClinkError> {
-    let proj = try!(ClinkProject::open("./"));
+    let proj = try!(Project::open("./"));
     try!(proj.generate_sln());
 
     Ok(())
 }
 
 fn try_filters() -> Result<(), ClinkError> {
-    let proj = try!(ClinkProject::open("./"));
+    let proj = try!(Project::open("./"));
     proj.generate_vcxproj_filters();
 
     Ok(())

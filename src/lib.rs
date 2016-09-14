@@ -3,7 +3,7 @@ extern crate uuid;
 extern crate walkdir;
 extern crate xml;
 
-mod vsdata;
+mod visualstudio;
 mod dependency;
 mod files;
 mod project;
@@ -13,7 +13,7 @@ mod wincanonicalize;
 use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
-pub use project::ClinkProject;
+pub use project::Project;
 
 pub enum ClinkError {
     InvalidProjectStructure(PathBuf, String), // Project location, Error string

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::Write;
 use uuid::Uuid;
-use vsdata::{ProjDesc, escape};
+use visualstudio::{ProjDesc, escape};
 
 pub enum VcxprojType {
     Application, StaticLibrary
@@ -45,10 +45,6 @@ impl VcxprojFile {
 
     pub fn add_reference(&mut self, desc: ProjDesc) {
         self.references.push(desc);
-    }
-
-    pub fn uuid(&self) -> &Uuid {
-        &self.uuid
     }
 
     pub fn write_to<P: Into<PathBuf>>(&self, path: P) -> ProjDesc {
@@ -100,7 +96,7 @@ impl VcxprojFile {
         for reference in &self.references {
             let path = escape(format!("{}", reference.vcxproj_path.display()));
             references.push_str(&format!("<ProjectReference Include=\"{}\">\n", path));
-            references.push_str(&format!("<Project>{}</Project>\n", reference.guid));
+            references.push_str(&format!("<Project>{}</Project>\n", reference.uuid));
             references.push_str("</ProjectReference>\n");
         }
         filedata = filedata.replace("{REFERENCES}", &references);
@@ -112,7 +108,7 @@ impl VcxprojFile {
         ProjDesc {
             name: self.name.clone(),
             vcxproj_path: path,
-            guid: format!("{{{}}}", self.uuid()),
+            uuid: self.uuid,
         }
     }
 }

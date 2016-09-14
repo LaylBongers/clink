@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use uuid::Uuid;
 use xml::writer::{XmlEvent, EmitterConfig};
-use vsdata::{ProjFiles};
+use visualstudio::{ProjFiles};
 use wincanonicalize::wincanonicalize;
 
 struct FileEntry {

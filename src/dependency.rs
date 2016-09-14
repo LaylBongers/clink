@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use wincanonicalize::wincanonicalize;
-use {ClinkProject, ClinkError};
+use {Project, ClinkError};
 
 #[derive(Debug)]
 pub struct Dependency {
@@ -40,7 +40,7 @@ impl Dependency {
         self.is_external
     }
 
-    pub fn open(&self) -> Result<ClinkProject, ClinkError> {
+    pub fn open(&self) -> Result<Project, ClinkError> {
         // Can't open external projects as clink projects
         if self.is_external {
             Err(ClinkError::InvalidProjectStructure(
@@ -48,7 +48,7 @@ impl Dependency {
                 "Cannot open external dependency as project".into()
             ))
         } else {
-            ClinkProject::open(&self.path)
+            Project::open(&self.path)
         }
     }
 }

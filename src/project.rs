@@ -2,20 +2,29 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::io::Read;
 use toml;
-use vsdata::{self, ProjFiles, SlnFile, VcxprojFile, ProjDesc, VcxprojType};
+use visualstudio::{self, ProjFiles, SlnFile, VcxprojFile, ProjDesc, VcxprojType};
 use files;
 use dependency::{Dependency};
 use tomlvalue::{toml_value_table, toml_value_str, toml_table};
 use ClinkError;
 
-pub struct ClinkProject {
+pub struct Project {
     path: PathBuf,
     name: String,
-    class: String,
+    class: ProjectClass,
     dependencies: Vec<Dependency>,
 }
 
-impl ClinkProject {
+impl Project {
+    pub fn new(name: String) -> Self {
+        Project {
+            path: "".into(),
+            name: name,
+            class: ProjectClass::Library,
+            dependencies: Vec::new(),
+        }
+    }
+
     pub fn open<P: Into<PathBuf>>(path: P) -> Result<Self, ClinkError> {
         // Find the project description file
         let path: PathBuf = path.into();
@@ -52,12 +61,20 @@ impl ClinkProject {
         }
 
         // Store all the information into a helper struct
-        Ok(ClinkProject {
+        Ok(Project {
             path: path,
-            class: class,
             name: name,
+            class: try!(ProjectClass::parse(&class)),
             dependencies: dependencies,
         })
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn class(&self) -> &ProjectClass {
+        &self.class
     }
 
     /// Generate the visual studio solution file for this project.
@@ -117,10 +134,9 @@ impl ClinkProject {
     // TODO: Change Vec<ProjDesc> to Vec<AvailableDependency> so we can track more data
     pub fn generate_vcxproj(&self, available_dependencies: &Vec<ProjDesc>) -> ProjDesc {
         // Get the project type for our clink project type string
-        let class = match self.class.as_str() {
-            "binary" => VcxprojType::Application,
-            "library" => VcxprojType::StaticLibrary,
-            _ => panic!("Unknown type") // TODO: Catch this in open and handle gracefully
+        let class = match &self.class {
+            &ProjectClass::Application => VcxprojType::Application,
+            &ProjectClass::Library => VcxprojType::StaticLibrary,
         };
 
         // Create the project file representation
@@ -163,7 +179,7 @@ impl ClinkProject {
         let filename = format!("{}.vcxproj", self.name);
         let desc = vcxproj.write_to(files::clone_push_path(&self.path, &filename));
         let filename = format!("{}.vcxproj.filters", self.name);
-        vsdata::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
+        visualstudio::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
 
         desc
     }
@@ -171,6 +187,34 @@ impl ClinkProject {
     pub fn generate_vcxproj_filters(&self) {
         let files = ProjFiles::scan(&self.path);
         let filename = format!("{}.vcxproj.filters", self.name);
-        vsdata::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
+        visualstudio::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ProjectClass {
+    Application,
+    Library
+}
+
+impl ProjectClass {
+    pub fn parse(value: &str) -> Result<Self, ClinkError> {
+        match value {
+            "application" => Ok(ProjectClass::Application),
+            "library" => Ok(ProjectClass::Library),
+            v => Err(ClinkError::InvalidProjectFile(format!("\"{}\" is not a valid project type", v)))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Project, ProjectClass};
+
+    #[test]
+    fn new_creates_library_with_name() {
+        let proj = Project::new("MyProject".into());
+        assert_eq!(proj.name(), "MyProject");
+        assert_eq!(proj.class(), &ProjectClass::Library);
     }
 }

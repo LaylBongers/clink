@@ -4,6 +4,7 @@ mod slnfile;
 mod vcxprojfile;
 
 use std::path::PathBuf;
+use uuid::Uuid;
 
 pub use self::filters::generate_filters;
 pub use self::projfiles::ProjFiles;
@@ -14,7 +15,7 @@ pub use self::vcxprojfile::{VcxprojFile, VcxprojType};
 pub struct ProjDesc {
     pub name: String,
     pub vcxproj_path: PathBuf,
-    pub guid: String,
+    pub uuid: Uuid,
 }
 
 pub fn escape(raw: String) -> String {
