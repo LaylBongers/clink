@@ -27,10 +27,20 @@ impl ProjFiles {
                     .map(|e| e.to_string_lossy().to_string())
                     .unwrap_or("".into());
 
-                if extension == "cpp" || extension == "c" {
+                if extension == "cpp" || extension == "c" || extension == "cc" {
+                    // Skip files we already have
+                    if compile.iter().find(|f| f == &&file).is_some() {
+                        continue;
+                    }
+
                     compile.push(file);
                 }
                 else if extension == "hpp" || extension == "h" {
+                    // Skip files we already have
+                    if include.iter().find(|f| f == &&file).is_some() {
+                        continue;
+                    }
+
                     include.push(file);
                 }
 

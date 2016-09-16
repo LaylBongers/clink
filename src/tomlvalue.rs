@@ -41,11 +41,11 @@ pub fn toml_slice<'a>(value: &'a Value, value_name: &str) -> Result<&'a [Value],
 
 pub fn toml_read_paths<'a, F: Fn() -> Vec<PathBuf>>(table: &'a Table, value_name: &str, default: F)
     -> Result<Vec<PathBuf>, ClinkError> {
-    let paths = if let Some(paths) = table.get("include") {
+    let paths = if let Some(paths) = table.get(value_name) {
         let mut path_entries: Vec<PathBuf> = Vec::new();
 
         for path in try!(toml_slice(paths, value_name)) {
-            let value = try!(toml_str(path, "include_value"));
+            let value = try!(toml_str(path, &format!("{}_value", value_name)));
             path_entries.push(value.into());
         }
 
