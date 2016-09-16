@@ -10,7 +10,20 @@ Currently available types are:
 - "external" A custom external dependency (not yet implemented)
 
 ```toml
-[project]
+[package]
 name = "SomeLibrary"
 type = "library" # <-
+```
+
+## Compile and Include Paths
+You can define custom paths for CLink to search for files to compile and to add
+to the include path. The default value for `compile` is `["src"]`, the default
+value for `include` is `["include"]`.
+
+```
+[package]
+name = "SomeLibrary"
+type = "library"
+compile = ["../somelibrary/src", "./src_ext"] # <-
+include = ["../somelibrary/include", "./include_ext"] # <-
 ```
