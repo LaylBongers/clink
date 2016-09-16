@@ -26,7 +26,7 @@ impl Display for ClinkError {
             ClinkError::InvalidProjectStructure(ref loc, ref msg) =>
                 write!(f, "Invalid project structure\n Location: {}\n Error: {}", loc.display(), msg),
             ClinkError::InvalidProjectFile(ref msg) =>
-                write!(f, "Invalid project file\n {}", msg),
+                write!(f, "Invalid project file\n Error: {}", msg),
         }
     }
 }

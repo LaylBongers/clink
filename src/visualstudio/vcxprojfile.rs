@@ -109,6 +109,7 @@ impl VcxprojFile {
             name: self.name.clone(),
             vcxproj_path: path,
             uuid: self.uuid,
+            can_includes: self.include_path.clone()
         }
     }
 }

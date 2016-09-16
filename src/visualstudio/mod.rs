@@ -16,6 +16,7 @@ pub struct ProjDesc {
     pub name: String,
     pub vcxproj_path: PathBuf,
     pub uuid: Uuid,
+    pub can_includes: Vec<PathBuf>,
 }
 
 pub fn escape(raw: String) -> String {

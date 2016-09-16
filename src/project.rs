@@ -5,13 +5,18 @@ use toml;
 use visualstudio::{self, ProjFiles, SlnFile, VcxprojFile, ProjDesc, VcxprojType};
 use files;
 use dependency::{Dependency};
-use tomlvalue::{toml_value_table, toml_value_str, toml_table};
+use tomlvalue::{toml_value_table, toml_value_str, toml_table, toml_read_paths};
+use wincanonicalize::wincanonicalize;
 use ClinkError;
 
 pub struct Project {
-    path: PathBuf,
+    path: PathBuf, // TODO: Remove path from project, this should be handled by other systems
+
     name: String,
     class: ProjectClass,
+    compile_relative_paths: Vec<PathBuf>,
+    include_relative_paths: Vec<PathBuf>,
+
     dependencies: Vec<Dependency>,
 }
 
@@ -19,8 +24,12 @@ impl Project {
     pub fn new(name: String) -> Self {
         Project {
             path: "".into(),
+
             name: name,
             class: ProjectClass::Library,
+            compile_relative_paths: Vec::new(),
+            include_relative_paths: Vec::new(),
+
             dependencies: Vec::new(),
         }
     }
@@ -28,7 +37,13 @@ impl Project {
     pub fn open<P: Into<PathBuf>>(path: P) -> Result<Self, ClinkError> {
         // Find the project description file
         let path: PathBuf = path.into();
-        let toml_path = files::clone_push_path(&path, "Clink.toml");
+
+        // Check if we are a toml path already, if not then add it
+        let toml_path = if path.extension().map(|v| v == "toml").unwrap_or(false) {
+            path.clone()
+        } else {
+            files::clone_push_path(&path, "Clink.toml")
+        };
 
         // Read all the text from it
         let mut f = try!(File::open(toml_path).map_err(|_|
@@ -44,6 +59,10 @@ impl Project {
         let package = try!(toml_value_table(&toml, "package"));
         let name: String = try!(toml_value_str(&package, "name")).into();
         let class: String = try!(toml_value_str(&package, "type")).into();
+
+        // Read in the paths
+        let compile_relative_paths = try!(toml_read_paths(&package, "compile", || vec!("./src".into())));
+        let include_relative_paths = try!(toml_read_paths(&package, "include", || vec!("./include".into())));
 
         // Read in all dependencies
         let mut dependencies = Vec::new();
@@ -63,8 +82,12 @@ impl Project {
         // Store all the information into a helper struct
         Ok(Project {
             path: path,
+
             name: name,
             class: try!(ProjectClass::parse(&class)),
+            compile_relative_paths: compile_relative_paths,
+            include_relative_paths: include_relative_paths,
+
             dependencies: dependencies,
         })
     }
@@ -109,11 +132,6 @@ impl Project {
     fn generate_vcxproj_recursive(&self, projects: &mut Vec<ProjDesc>) -> Result<(), ClinkError> {
         // Go over all dependencies
         for dep in &self.dependencies {
-            // TODO: Implement external dependencies
-            if dep.is_external() {
-                continue;
-            }
-
             // Check if this dependency has already been generated
             if let Some(found) = projects.iter().find(|p| &p.name == dep.name()) {
                 // It exists already, make sure the path is the same then skip it
@@ -121,14 +139,25 @@ impl Project {
                 found_path.pop();
                 if dep.path() != &found_path {
                     // TODO: Improve error handling, add a DependencyConflict error
-                    panic!("Multiple dependencies with same name and different path");
+                    panic!(
+                        "Multiple dependencies with same name and different path\n Previous {} at: {}\n Current {} at: {}",
+                        found.name, found_path.display(),
+                        dep.name(), dep.path().display(),
+                    );
                 }
 
                 continue;
             }
 
-            // Open the project and generate it as well
+            // Open the project
             let proj = try!(dep.open());
+
+            // TODO: Implement external dependencies
+            if proj.class() == &ProjectClass::External {
+                continue;
+            }
+
+            // Generate the vcxproj for this project
             try!(proj.generate_vcxproj_recursive(projects));
         }
 
@@ -149,16 +178,19 @@ impl Project {
         let class = match &self.class {
             &ProjectClass::Application => VcxprojType::Application,
             &ProjectClass::Library => VcxprojType::StaticLibrary,
+            _ => panic!("Internal error: Cannot generate vcxproj for external dependency")
         };
 
         // Create the project file representation
         let mut vcxproj = VcxprojFile::new(self.name.clone(), class);
 
-        // Add the include folder to the include path
-        vcxproj.add_include_path(files::clone_push_path(&self.path, "include"));
+        // Add the include folders to the include path
+        for path in self.can_includes() {
+            vcxproj.add_include_path(path);
+        }
 
         // Find the .hpp and .cpp files the vcxproj needs
-        let files = ProjFiles::scan(&self.path);
+        let files = ProjFiles::scan(&self.can_file_paths());
         for file in &files.compile {
             vcxproj.add_compile(file.into());
         }
@@ -168,45 +200,101 @@ impl Project {
 
         // Look up and add all the dependencies
         for dep in &self.dependencies {
-            // TODO: Implement external dependencies
-            if dep.is_external() {
-                continue;
-            }
+            // Find the actual project corresponding to the dependency
+            let desc = available_dependencies.iter().find(|p| &p.name == dep.name());
 
-            // Find and add a reference for this dependency
-            let desc = available_dependencies.iter().find(|p| &p.name == dep.name())
-                .expect("Internal error, dependency not found!");
+            let desc = if let Some(desc) = desc {
+                desc
+            } else {
+                // TODO: Implement external dependencies
+                println!("WARNING: External dependency skipped, not yet implemented");
+                continue;
+            };
+
+            // Add a reference to the dependency
             vcxproj.add_reference(desc.clone());
 
             // Add the dependency to the include path
-            vcxproj.add_include_path(files::clone_push_path(&dep.path(), "include"));
+            for path in &desc.can_includes {
+                vcxproj.add_include_path(path.clone());
+            }
         }
 
         // TODO: Check if the vcxproj needs to be re-generated or not before actually doing it
         // We should only re-generate if the files don't match
-        // TODO: Re-use the same project GUID
+        // TODO: Re-use the same project GUID (perhaps use path hashes)
         // Both of these could make use of a Clink.cache file
+
+        // VS Project base path
+        let base_path = if self.path.extension().map(|v| v == "toml").unwrap_or(false) {
+            let mut base_path = self.path.clone();
+            base_path.pop();
+            base_path
+        } else {
+            self.path.clone()
+        };
 
         // Write the vcxproj and vcxproj.filters to disk
         let filename = format!("{}.vcxproj", self.name);
-        let desc = vcxproj.write_to(files::clone_push_path(&self.path, &filename));
+        let desc = vcxproj.write_to(files::clone_push_path(&base_path, &filename));
         let filename = format!("{}.vcxproj.filters", self.name);
-        visualstudio::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
+        visualstudio::generate_filters(&base_path, &files, files::clone_push_path(&base_path, &filename));
 
         desc
     }
 
     pub fn generate_vcxproj_filters(&self) {
-        let files = ProjFiles::scan(&self.path);
+        let files = ProjFiles::scan(&self.can_file_paths());
         let filename = format!("{}.vcxproj.filters", self.name);
         visualstudio::generate_filters(&self.path, &files, files::clone_push_path(&self.path, &filename));
+    }
+
+    // These "can" prefixed functions are temporary while I'm still moving path out of project
+    fn can_file_paths(&self) -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+        for path in &self.compile_relative_paths {
+            let append_path = files::clone_push_path(&self.base_path(), path.to_str().unwrap());
+            if append_path.exists() {
+                paths.push(wincanonicalize(append_path));
+            }
+        }
+        for path in &self.include_relative_paths {
+            let append_path = files::clone_push_path(&self.base_path(), path.to_str().unwrap());
+            if append_path.exists() {
+                paths.push(wincanonicalize(append_path));
+            }
+        }
+        paths
+    }
+
+    // These "can" prefixed functions are temporary while I'm still moving path out of project
+    fn can_includes(&self) -> Vec<PathBuf> {
+        let mut paths = Vec::new();
+        for path in &self.include_relative_paths {
+            let append_path = files::clone_push_path(&self.base_path(), path.to_str().unwrap());
+            if append_path.exists() {
+                paths.push(wincanonicalize(append_path));
+            }
+        }
+        paths
+    }
+
+    fn base_path(&self) -> PathBuf {
+        let mut path = self.path.clone();
+        if path.extension().map(|v| v == "toml").unwrap_or(false) {
+            path.pop();
+            path
+        } else {
+            path
+        }
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum ProjectClass {
     Application,
-    Library
+    Library,
+    External
 }
 
 impl ProjectClass {
@@ -214,6 +302,7 @@ impl ProjectClass {
         match value {
             "application" => Ok(ProjectClass::Application),
             "library" => Ok(ProjectClass::Library),
+            "external" => Ok(ProjectClass::External),
             v => Err(ClinkError::InvalidProjectFile(format!("\"{}\" is not a valid project type", v)))
         }
     }
@@ -222,6 +311,7 @@ impl ProjectClass {
         match self {
             &ProjectClass::Application => "application".into(),
             &ProjectClass::Library => "library".into(),
+            &ProjectClass::External => "external".into(),
         }
     }
 }
