@@ -4,8 +4,8 @@ use {Project, ClinkError};
 
 #[derive(Debug)]
 pub struct Dependency {
-    name: String,
-    path: PathBuf,
+    pub name: String,
+    pub path: PathBuf,
 }
 
 impl Dependency {
@@ -20,15 +20,7 @@ impl Dependency {
             path: canonical,
         }
     }
-
-    pub fn name(&self) -> &String {
-        &self.name
-    }
-
-    pub fn path(&self) -> &PathBuf {
-        &self.path
-    }
-
+    
     pub fn open(&self) -> Result<Project, ClinkError> {
         Project::open(&self.path)
     }

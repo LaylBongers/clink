@@ -50,14 +50,14 @@ fn main() {
 
 fn try_generate() -> Result<(), ClinkError> {
     let proj = try!(Project::open("./"));
-    try!(proj.generate_sln());
+    try!(proj.generate_sln("./"));
 
     Ok(())
 }
 
 fn try_filters() -> Result<(), ClinkError> {
     let proj = try!(Project::open("./"));
-    proj.generate_vcxproj_filters();
+    proj.generate_vcxproj_filters("./");
 
     Ok(())
 }
