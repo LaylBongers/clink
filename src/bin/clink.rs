@@ -5,7 +5,7 @@ extern crate clink;
 use std::process;
 use std::io::{self, Write};
 use docopt::Docopt;
-use clink::{Project, ClinkError};
+use clink::{visualstudio, Project, ClinkError};
 
 const USAGE: &'static str = "
 A simple C++ build system generator
@@ -50,20 +50,25 @@ fn main() {
 
 fn try_generate() -> Result<(), ClinkError> {
     let proj = try!(Project::open("./"));
-    try!(proj.generate_sln("./"));
+    try!(visualstudio::generate_sln(&proj, "./"));
 
     Ok(())
 }
 
 fn try_filters() -> Result<(), ClinkError> {
     let proj = try!(Project::open("./"));
-    proj.generate_vcxproj_filters("./");
+    visualstudio::generate_vcxproj_filters(&proj, "./");
 
     Ok(())
 }
 
 fn try_init() -> Result<(), ClinkError> {
-    // TODO: Verify the project doesn't already exist
+    // First try to open an already existing project here
+    if Project::open("./").is_ok() {
+        // There's already a project here, don't bother initializing
+        println!("WARNING: Project already exists at target location");
+        return Ok(());
+    }
 
     // Assume the name from the current directory
     // TODO: Move this into a utility in clink

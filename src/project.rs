@@ -2,11 +2,9 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::io::Read;
 use toml;
-use visualstudio::{self, ProjFiles};
 use files;
 use dependency::{Dependency};
 use tomlvalue::{toml_value_table, toml_value_str, toml_table, toml_read_paths};
-use wincanonicalize::wincanonicalize;
 use ClinkError;
 
 pub struct Project {
@@ -96,36 +94,6 @@ impl Project {
         table.insert("package".into(), toml::Value::Table(package));
 
         toml::Value::Table(table)
-    }
-
-    /// Generate the visual studio solution file for this project.
-    pub fn generate_sln<P: Into<PathBuf>>(&self, target_path: P) -> Result<(), ClinkError> {
-        let target_path = target_path.into();
-        visualstudio::generate(&self, &target_path)
-    }
-
-    pub fn generate_vcxproj_filters<P: Into<PathBuf>>(&self, target_path: P) {
-        let target_path = target_path.into();
-        let files = ProjFiles::scan(&self.can_file_paths(&target_path));
-        let filename = format!("{}.vcxproj.filters", self.name);
-        visualstudio::generate_filters(&target_path, &files, files::clone_push_path(&target_path, &filename));
-    }
-
-    pub fn can_file_paths(&self, source_path: &PathBuf) -> Vec<PathBuf> {
-        let mut paths = Vec::new();
-        for path in &self.compile_relative_paths {
-            let append_path = files::clone_push_path(source_path, path.to_str().unwrap());
-            if append_path.exists() {
-                paths.push(wincanonicalize(append_path));
-            }
-        }
-        for path in &self.include_relative_paths {
-            let append_path = files::clone_push_path(source_path, path.to_str().unwrap());
-            if append_path.exists() {
-                paths.push(wincanonicalize(append_path));
-            }
-        }
-        paths
     }
 }
 

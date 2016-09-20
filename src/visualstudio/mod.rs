@@ -9,8 +9,8 @@ use project::{Project, ProjectClass};
 use files;
 use wincanonicalize::wincanonicalize;
 use ClinkError;
+use self::filters::generate_filters;
 
-pub use self::filters::generate_filters;
 pub use self::projfiles::ProjFiles;
 pub use self::slnfile::SlnFile;
 pub use self::vcxprojfile::{VcxprojFile, VcxprojType};
@@ -37,10 +37,20 @@ pub fn escape(raw: String) -> String {
     escaped
 }
 
-pub fn generate(project: &Project, target_path: &PathBuf) -> Result<(), ClinkError> {
+pub fn generate_vcxproj_filters<P: Into<PathBuf>>(project: &Project, target_path: P) {
+    let target_path = target_path.into();
+    let files = ProjFiles::scan(&can_file_paths(&project, &target_path));
+    let filename = format!("{}.vcxproj.filters", project.name);
+    generate_filters(&target_path, &files, files::clone_push_path(&target_path, &filename));
+}
+
+/// Generate the visual studio solution file for this project.
+pub fn generate_sln<P: Into<PathBuf>>(project: &Project, target_path: P) -> Result<(), ClinkError> {
+    let target_path = target_path.into();
+
     // Go over this project and all dependencies and generate vcxprojs for them
     let mut projects = Vec::new();
-    try!(generate_vcxproj_recursive(project, target_path, &mut projects));
+    try!(generate_vcxproj_recursive(project, &target_path, &mut projects));
 
     // Write out the sln
     let mut sln = SlnFile::new();
@@ -51,6 +61,23 @@ pub fn generate(project: &Project, target_path: &PathBuf) -> Result<(), ClinkErr
     sln.write_to(files::clone_push_path(&target_path, &filename));
 
     Ok(())
+}
+
+fn can_file_paths(project: &Project, source_path: &PathBuf) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    for path in &project.compile_relative_paths {
+        let append_path = files::clone_push_path(source_path, path.to_str().unwrap());
+        if append_path.exists() {
+            paths.push(wincanonicalize(append_path));
+        }
+    }
+    for path in &project.include_relative_paths {
+        let append_path = files::clone_push_path(source_path, path.to_str().unwrap());
+        if append_path.exists() {
+            paths.push(wincanonicalize(append_path));
+        }
+    }
+    paths
 }
 
 fn generate_vcxproj_recursive(project: &Project, target_path: &PathBuf, projects: &mut Vec<ProjDesc>) -> Result<(), ClinkError> {
@@ -123,7 +150,7 @@ fn generate_vcxproj(project: &Project, target_path: &PathBuf, available_dependen
     }
 
     // Find the .hpp and .cpp files the vcxproj needs
-    let files = ProjFiles::scan(&project.can_file_paths(target_path));
+    let files = ProjFiles::scan(&can_file_paths(&project, target_path));
     for file in &files.compile {
         vcxproj.add_compile(file.into());
     }

@@ -3,7 +3,7 @@ extern crate uuid;
 extern crate walkdir;
 extern crate xml;
 
-mod visualstudio;
+pub mod visualstudio;
 mod dependency;
 mod files;
 mod project;
