@@ -131,25 +131,4 @@ pub fn generate_filters<Pr: AsRef<Path>, Pt: AsRef<Path>>(project_root: Pr, file
     // Finally, write the generated file to disk
     let mut file = File::create(target).unwrap();
     write!(file, "{}", ::std::str::from_utf8(&b).unwrap()).unwrap();
-
-
-    // Write the compile files
-    /*let mut compiled = String::new();
-    for filename in &files.compile {
-        let filename = escape(format!("{}", filename.display()));
-        compiled.push_str(&format!("<ClCompile Include=\"{}\">\n", filename));
-        compiled.push_str("<Filter>Source Files</Filter>\n");
-        compiled.push_str("</ClCompile>\n");
-    }
-    filedata = filedata.replace("{COMPILE_FILES}", &compiled);
-
-    // Write the include files
-    let mut include = String::new();
-    for filename in &files.include {
-        let filename = escape(format!("{}", filename.display()));
-        include.push_str(&format!("<ClInclude Include=\"{}\">\n", filename));
-        include.push_str("<Filter>Header Files</Filter>\n");
-        include.push_str("</ClInclude>\n");
-    }
-    filedata = filedata.replace("{INCLUDE_FILES}", &include);*/
 }

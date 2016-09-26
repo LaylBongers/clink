@@ -2,6 +2,7 @@ mod filters;
 mod projfiles;
 mod slnfile;
 mod vcxprojfile;
+mod sxml;
 
 use std::path::PathBuf;
 use uuid::Uuid;
